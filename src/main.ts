@@ -105,10 +105,24 @@ const ruleEditor = monaco.editor.create(
   {
     value: `{
   "and": [
-    { "<": [ { "var": "temp" }, 110 ] },
-    { "==": [ { "var": "pie.filling" }, "apple" ] }
+    { "<": [ { "var": "temp" }, { "call": [ "toNumber", 110 ] } ] },
+    { "==": [ { "call": [ "toLower", { "var": "pie.filling" } ] }, "apple" ] },
+    { ">=": [ { "var": "user.age" }, 18 ] },
+
+    { "==": [ { "call": [ "todayIso" ] }, { "var": "context.today" } ] },
+
+    { "<=": [
+      { "call": [ "todayIso" ] },
+      { "call": [ "addDays", { "var": "order.date" }, 7 ] }
+    ]},
+
+    { "==": [
+      { "call": [ "isWeekend", { "call": [ "todayIso" ] } ] },
+      { "var": "context.allowWeekend" }
+    ]}
   ]
-}`,
+}
+`,
     language: "json",
     theme: "vs-dark",
     minimap: { enabled: false },
