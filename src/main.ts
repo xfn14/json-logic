@@ -4,12 +4,15 @@ import "./style.css";
 
 import jsToJsonLogic from "js-to-json-logic";
 
-const engine = new LogicEngine();
-
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
 <div class="playground">
   <h1>JsonLogic Playground</h1>
+
+  <div class="pane">
+    <h2>Engine init (JavaScript)</h2>
+    <div id="initEditor" class="editor"></div>
+  </div>
 
   <div class="pane">
     <h2>Rule (JavaScript)</h2>
@@ -45,6 +48,36 @@ app.innerHTML = `
   </div>
 </div>
 `;
+
+const initEditor = monaco.editor.create(
+  document.getElementById("initEditor")!,
+  {
+    value: `const allowed = {
+  nowMs: () => Date.now(),
+  todayIso: () => new Date().toISOString().slice(0, 10),
+  addDays: (iso, days) => {
+    const d = new Date(iso);
+    d.setUTCDate(d.getUTCDate() + Number(days));
+    return d.toISOString().slice(0, 10);
+  },
+};
+
+engine.addMethod(
+  "call",
+  (name, ...args) => {
+    const fn = allowed[name];
+    if (!fn) throw new Error(\`Function not allowed: \${String(name)}\`);
+    return fn(...args);
+  },
+  { deterministic: false }
+);
+`,
+    language: "javascript",
+    theme: "vs-dark",
+    minimap: { enabled: false },
+    automaticLayout: true,
+  }
+);
 
 const ruleEditor = monaco.editor.create(
   document.getElementById("ruleEditor")!,
@@ -93,23 +126,38 @@ const convertBtn = document.querySelector<HTMLButtonElement>("#convertBtn")!;
 convertBtn.addEventListener("click", () => {
   try {
     const js = jsEditor.getValue() ?? "";
-
     const logic = jsToJsonLogic(js);
 
     convertResultEl.textContent = JSON.stringify(logic, null, 2);
-
     ruleEditor.setValue(JSON.stringify(logic, null, 2));
   } catch (err: any) {
     convertResultEl.textContent = "Error: " + (err?.message ?? String(err));
   }
 });
 
-runBtn.addEventListener("click", () => {
+function buildEngine() {
+  const engine = new LogicEngine();
+
+  const initCode = initEditor.getValue() ?? "";
+
+  const fn = new Function(
+    "engine",
+    "LogicEngine",
+    `"use strict";\n${initCode}\n`
+  ) as (engine: any, LogicEngine: any) => void;
+
+  fn(engine, LogicEngine);
+  return engine;
+}
+
+runBtn.addEventListener("click", async () => {
   try {
+    const engine = buildEngine();
+
     const rule = JSON.parse(ruleEditor.getValue() || "null");
     const data = JSON.parse(dataEditor.getValue() || "null");
 
-    const output = engine.run(rule, data);
+    const output = await engine.run(rule, data);
     resultEl.textContent = JSON.stringify(output, null, 2);
   } catch (err: any) {
     resultEl.textContent = "Error: " + (err?.message ?? String(err));
@@ -124,6 +172,7 @@ function makeResizable(
   ro.observe(container);
 }
 
+makeResizable(document.getElementById("initEditor")!, initEditor);
 makeResizable(document.getElementById("ruleEditor")!, ruleEditor);
 makeResizable(document.getElementById("dataEditor")!, dataEditor);
 makeResizable(document.getElementById("jsEditor")!, jsEditor);
