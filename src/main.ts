@@ -1,4 +1,5 @@
 import { LogicEngine } from "json-logic-engine";
+import * as monaco from "monaco-editor";
 import "./style.css";
 
 const engine = new LogicEngine();
@@ -10,22 +11,12 @@ app.innerHTML = `
 
     <div class="pane">
       <h2>Rule (JsonLogic)</h2>
-      <textarea id="rule" rows="10" spellcheck="false">
-{
-  "and": [
-    { "<": [ { "var": "temp" }, 110 ] },
-    { "==": [ { "var": "pie.filling" }, "apple" ] }
-  ]
-}</textarea>
+      <div id="ruleEditor" class="editor"></div>
     </div>
 
     <div class="pane">
       <h2>Data (JSON)</h2>
-      <textarea id="data" rows="10" spellcheck="false">
-{
-  "temp": 100,
-  "pie": { "filling": "apple" }
-}</textarea>
+      <div id="dataEditor" class="editor"></div>
     </div>
 
     <button id="runBtn">Run</button>
@@ -37,15 +28,43 @@ app.innerHTML = `
   </div>
 `;
 
-const ruleEl = document.querySelector<HTMLTextAreaElement>("#rule")!;
-const dataEl = document.querySelector<HTMLTextAreaElement>("#data")!;
+const ruleEditor = monaco.editor.create(
+  document.getElementById("ruleEditor")!,
+  {
+    value: `{
+  "and": [
+    { "<": [ { "var": "temp" }, 110 ] },
+    { "==": [ { "var": "pie.filling" }, "apple" ] }
+  ]
+}`,
+    language: "json",
+    theme: "vs-dark",
+    minimap: { enabled: false },
+    automaticLayout: true,
+  }
+);
+
+const dataEditor = monaco.editor.create(
+  document.getElementById("dataEditor")!,
+  {
+    value: `{
+  "temp": 100,
+  "pie": { "filling": "apple" }
+}`,
+    language: "json",
+    theme: "vs-dark",
+    minimap: { enabled: false },
+    automaticLayout: true,
+  }
+);
+
 const resultEl = document.querySelector<HTMLPreElement>("#result")!;
 const runBtn = document.querySelector<HTMLButtonElement>("#runBtn")!;
 
 runBtn.addEventListener("click", () => {
   try {
-    const rule = JSON.parse(ruleEl.value || "null");
-    const data = JSON.parse(dataEl.value || "null");
+    const rule = JSON.parse(ruleEditor.getValue() || "null");
+    const data = JSON.parse(dataEditor.getValue() || "null");
 
     const output = engine.run(rule, data);
     resultEl.textContent = JSON.stringify(output, null, 2);
@@ -53,3 +72,18 @@ runBtn.addEventListener("click", () => {
     resultEl.textContent = "Error: " + (err?.message ?? String(err));
   }
 });
+
+function makeResizable(
+  container: HTMLElement,
+  editor: monaco.editor.IStandaloneCodeEditor
+) {
+  const ro = new ResizeObserver(() => {
+    editor.layout();
+  });
+
+  ro.observe(container);
+}
+
+makeResizable(document.getElementById("ruleEditor")!, ruleEditor);
+
+makeResizable(document.getElementById("dataEditor")!, dataEditor);
