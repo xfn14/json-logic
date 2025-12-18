@@ -54,7 +54,7 @@ const initEditor = monaco.editor.create(
   {
     value: `const allowed = {
   nowMs: () => Date.now(),
-  todayIso: () => new Date().toISOString().slice(0, 10),
+  todayIso: () => new Date().toISOString(),
 
   addDays: (iso, days) => {
     const d = new Date(iso);
