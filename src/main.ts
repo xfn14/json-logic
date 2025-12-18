@@ -55,16 +55,37 @@ const initEditor = monaco.editor.create(
     value: `const allowed = {
   nowMs: () => Date.now(),
   todayIso: () => new Date().toISOString().slice(0, 10),
+
   addDays: (iso, days) => {
     const d = new Date(iso);
     d.setUTCDate(d.getUTCDate() + Number(days));
     return d.toISOString().slice(0, 10);
   },
+  isoDayOfWeek: (iso) => {
+    const d = new Date(iso + "T00:00:00.000Z");
+    const day = d.getUTCDay();
+    return day === 0 ? 7 : day;
+  },
+  isWeekend: (iso) => {
+    const dow = allowed.isoDayOfWeek(iso);
+    return dow === 6 || dow === 7;
+  },
+
+  toNumber: (v) => Number(v),
+  toLower: (v) => String(v ?? "").toLowerCase(),
 };
 
 engine.addMethod(
   "call",
-  (name, ...args) => {
+  (...raw) => {
+    const parts = Array.isArray(raw[0])
+      ? raw[0]
+      : raw.length === 1 && Array.isArray(raw[0])
+        ? raw[0]
+        : raw;
+
+    const [name, ...args] = parts;
+
     const fn = allowed[name];
     if (!fn) throw new Error(\`Function not allowed: \${String(name)}\`);
     return fn(...args);
@@ -100,7 +121,13 @@ const dataEditor = monaco.editor.create(
   {
     value: `{
   "temp": 100,
-  "pie": { "filling": "apple" }
+  "pie": { "filling": "Apple" },
+  "user": { "tier": "pro", "age": 21 },
+  "order": { "date": "2025-12-15" },
+  "context": {
+    "today": "2025-12-18",
+    "allowWeekend": false
+  }
 }`,
     language: "json",
     theme: "vs-dark",
@@ -110,7 +137,12 @@ const dataEditor = monaco.editor.create(
 );
 
 const jsEditor = monaco.editor.create(document.getElementById("jsEditor")!, {
-  value: `temp < 110 && pie.filling === "apple"`,
+  value: `(temp < call("toNumber", 110)) &&
+(call("toLower", (pie && pie.filling)) === "apple") &&
+(((user && user.age) || 0) >= 18) &&
+(call("todayIso") === (context && context.today)) &&
+(call("todayIso") <= call("addDays", (order && order.date), 7)) &&
+(call("isWeekend", call("todayIso")) === (context && context.allowWeekend))`,
   language: "javascript",
   theme: "vs-dark",
   minimap: { enabled: false },
