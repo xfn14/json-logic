@@ -71,6 +71,11 @@ const initEditor = monaco.editor.create(
     return dow === 6 || dow === 7;
   },
 
+  log: (v) => {
+    console.log(v);
+    return v;
+  },
+
   toNumber: (v) => Number(v),
   toLower: (v) => String(v ?? "").toLowerCase(),
 };
