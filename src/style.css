@@ -7,7 +7,8 @@
   border-radius: 0.5rem;
 }
 
-h1, h2 {
+h1,
+h2 {
   margin: 0.5rem;
 }
 
@@ -21,12 +22,18 @@ h1, h2 {
   max-height: 70vh;
 }
 
+a {
+  color: #3b82f6;
+  text-decoration: none;
+  margin-left: 0.5rem;
+}
 
 .pane {
   margin-bottom: 1rem;
 }
 
-textarea,pre {
+textarea,
+pre {
   width: 100%;
   font-family: monospace;
   background-color: #020617;

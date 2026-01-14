@@ -9,6 +9,8 @@ app.innerHTML = `
 <div class="playground">
   <h1>JsonLogic Playground</h1>
 
+  <a href="https://json-logic.github.io/json-logic-engine/docs/">json-logic-engine Docs</a>
+
   <div class="pane">
     <h2>Engine init (JavaScript)</h2>
     <div id="initEditor" class="editor"></div>
